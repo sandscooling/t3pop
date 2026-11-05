@@ -51,12 +51,10 @@ QVariantList Backend::defaultProjects()
     };
     // Hub keeps no running conversation (its handoff doc carries knowledge
     // between sessions), so each message starts its own thread there.
-    return {entry("Hub", "~/Hub", "fresh"), entry("T3 Code", "~/source/t3code", "orchestrator"),
-            entry("Fleet Cooling", "~/source/fleetcooling", "orchestrator"),
-            entry("OpenLogi", "~/source/OpenLogi", "orchestrator")};
+    return {entry("Hub", "~/Hub", "fresh"), entry("T3 Code", "~/source/t3code", "orchestrator")};
 }
 
-// Projects live in a small JSON file so Kevin can add one without a rebuild.
+// Projects live in a small JSON file so one can be added without a rebuild.
 // The first entry is the default target. A missing file is created with the
 // defaults; an unreadable one is reported rather than silently replaced.
 void Backend::loadProjects()

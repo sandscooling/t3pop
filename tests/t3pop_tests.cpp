@@ -78,8 +78,8 @@ private slots:
         QVERIFY(QFileInfo::exists(dir.path() + "/config/projects.json"));
         QCOMPARE(backend.projects().first().toMap().value("name").toString(), QString("Hub"));
         QCOMPARE(backend.projects().first().toMap().value("path").toString(), QDir::homePath() + "/Hub");
-        QVERIFY(backend.selectProject("fleet cooling"));
-        QCOMPARE(backend.projectIndex(), 2);
+        QVERIFY(backend.selectProject("t3 code"));
+        QCOMPARE(backend.projectIndex(), 1);
         QVERIFY(!backend.selectProject("nope"));
     }
 
