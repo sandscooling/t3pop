@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
+"$ROOT/bin/build"
+
+install -Dm755 "$ROOT/build/t3pop" "$HOME/.local/bin/t3pop"
+install -Dm644 "$ROOT/data/t3pop.desktop" "$DATA/applications/t3pop.desktop"
+install -Dm644 "$ROOT/data/t3pop.svg" "$DATA/icons/hicolor/scalable/apps/t3pop.svg"
+
+# Plasma's launcher reads a cached app database; rebuild it so the new entry
+# and icon show up without logging out.
+kbuildsycoca6 >/dev/null 2>&1 || true
+echo "Installed t3pop into ~/.local"

@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+
+DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
+rm -f "$HOME/.local/bin/t3pop" \
+      "$DATA/applications/t3pop.desktop" \
+      "$DATA/icons/hicolor/scalable/apps/t3pop.svg"
+kbuildsycoca6 >/dev/null 2>&1 || true
+echo "Removed t3pop from ~/.local"

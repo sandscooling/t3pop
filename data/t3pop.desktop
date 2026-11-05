@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=T3 Pop
+Comment=Send a message and screenshots to a T3 Code orchestrator
+Exec=t3pop open
+Icon=t3pop
+Terminal=false
+Categories=Utility;
+StartupWMClass=t3pop
+X-KDE-Shortcuts=Meta+A
