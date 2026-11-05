@@ -45,11 +45,14 @@ QString Backend::t3Path()
 
 QVariantList Backend::defaultProjects()
 {
-    auto entry = [](const QString &name, const QString &path) {
-        return QVariantMap{{"name", name}, {"path", path}};
+    auto entry = [](const QString &name, const QString &path, const QString &mode) {
+        return QVariantMap{{"name", name}, {"path", path}, {"mode", mode}};
     };
-    return {entry("Hub", "~/Hub"), entry("T3 Code", "~/source/t3code"),
-            entry("Fleet Cooling", "~/source/fleetcooling"), entry("OpenLogi", "~/source/OpenLogi")};
+    // Hub keeps no running conversation (its handoff doc carries knowledge
+    // between sessions), so each message starts its own thread there.
+    return {entry("Hub", "~/Hub", "fresh"), entry("T3 Code", "~/source/t3code", "orchestrator"),
+            entry("Fleet Cooling", "~/source/fleetcooling", "orchestrator"),
+            entry("OpenLogi", "~/source/OpenLogi", "orchestrator")};
 }
 
 // Projects live in a small JSON file so Kevin can add one without a rebuild.
@@ -87,6 +90,9 @@ void Backend::loadProjects()
         if (map.value("name").toString().isEmpty() || map.value("path").toString().isEmpty())
             continue;
         map["path"] = expandHome(map.value("path").toString());
+        // Anything but "fresh" means the project's orchestrator thread.
+        if (map.value("mode").toString() != "fresh")
+            map["mode"] = "orchestrator";
         m_projects << map;
     }
     emit projectsChanged();
@@ -195,10 +201,16 @@ QString Backend::findOrchestrator(const QByteArray &threadListJson)
 }
 
 SendPlan Backend::planSend(const QString &threadId, const QString &projectPath, const QString &text,
-                           const QStringList &images, bool imageFlag)
+                           const QStringList &images, bool imageFlag, bool fresh)
 {
     SendPlan plan;
-    if (threadId.isEmpty())
+    if (fresh) {
+        // The CLI titles a new thread from the message's first line; an
+        // image-only message needs a title of its own.
+        plan.args = {"thread", "start", projectPath, "-"};
+        if (text.trimmed().isEmpty())
+            plan.args << "--title" << "Screenshot";
+    } else if (threadId.isEmpty())
         plan.args = {"thread", "start", projectPath, "-", "--title", kOrchestratorTitle};
     else
         plan.args = {"thread", "send", threadId, "-"};
@@ -268,6 +280,9 @@ void Backend::send(const QString &text)
     setError({});
     setBusy(true);
 
+    if (currentIsFresh())
+        return runSend({}, text, true);
+
     const QString path = m_projects.value(m_projectIndex).toMap().value("path").toString();
     auto *list = new QProcess(this);
     connect(list, &QProcess::finished, this, [this, list, text](int code) {
@@ -277,15 +292,20 @@ void Backend::send(const QString &text)
             const QString err = QString::fromUtf8(list->readAllStandardError()).trimmed();
             return fail(err.isEmpty() ? tr("t3 thread list failed (exit %1).").arg(code) : err);
         }
-        runSend(findOrchestrator(out), text);
+        runSend(findOrchestrator(out), text, false);
     });
     list->start(t3Path(), {"thread", "list", "--project", path, "--json"});
 }
 
-void Backend::runSend(const QString &threadId, const QString &text)
+bool Backend::currentIsFresh() const
+{
+    return m_projects.value(m_projectIndex).toMap().value("mode").toString() == "fresh";
+}
+
+void Backend::runSend(const QString &threadId, const QString &text, bool fresh)
 {
     const QString path = m_projects.value(m_projectIndex).toMap().value("path").toString();
-    const SendPlan plan = planSend(threadId, path, text, m_images, detectImageFlag());
+    const SendPlan plan = planSend(threadId, path, text, m_images, detectImageFlag(), fresh);
 
     auto *proc = new QProcess(this);
     connect(proc, &QProcess::finished, this, [this, proc, threadId](int code) {

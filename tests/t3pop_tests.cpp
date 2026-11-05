@@ -25,6 +25,28 @@ private slots:
         QCOMPARE(plan.stdinText, QString("hi"));
     }
 
+    void freshModeStartsAnUntitledThread()
+    {
+        // Titled by the CLI from the first line, never "Orchestrator".
+        SendPlan plan = Backend::planSend({}, "/hub", "Wi-Fi drops", {}, false, true);
+        QCOMPARE(plan.args, QStringList({"thread", "start", "/hub", "-"}));
+        plan = Backend::planSend({}, "/hub", "", {"/a.png"}, false, true);
+        QCOMPARE(plan.args, QStringList({"thread", "start", "/hub", "-", "--title", "Screenshot"}));
+    }
+
+    void projectsDefaultToTheirOrchestrator()
+    {
+        QTemporaryDir dir;
+        QDir().mkpath(dir.path() + "/config");
+        QFile f(dir.path() + "/config/projects.json");
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(R"([{"name":"Hub","path":"/h","mode":"fresh"},{"name":"P","path":"/p"}])");
+        f.close();
+        Backend backend(dir.path() + "/config", dir.path() + "/drops");
+        QCOMPARE(backend.projects()[0].toMap().value("mode").toString(), QString("fresh"));
+        QCOMPARE(backend.projects()[1].toMap().value("mode").toString(), QString("orchestrator"));
+    }
+
     void attachesImagesNativelyWhenTheCliCan()
     {
         const SendPlan plan = Backend::planSend("t1", "/p", "look", {"/a.png", "/b.png"}, true);

@@ -16,8 +16,9 @@ ApplicationWindow {
     property bool helpVisible: false
     readonly property bool hasDraft: input.text.trim().length > 0 || backend.images.length > 0
     readonly property string projectName: backend.projects.length > 0 ? backend.projects[backend.projectIndex].name : ""
+    readonly property bool fresh: backend.projects.length > 0 && backend.projects[backend.projectIndex].mode === "fresh"
     readonly property var shortcuts: [
-        ["Enter", qsTr("Send to the orchestrator")],
+        ["Enter", qsTr("Send")],
         ["Shift+Enter", qsTr("New line")],
         ["Ctrl+V", qsTr("Paste text or an image")],
         ["Ctrl+Shift+S", qsTr("Screenshot a region")],
@@ -92,7 +93,7 @@ ApplicationWindow {
                 onActivated: (i) => { backend.projectIndex = i; input.forceActiveFocus() }
                 Layout.preferredWidth: 180
             }
-            Label { text: qsTr("orchestrator"); opacity: 0.7 }
+            Label { text: win.fresh ? qsTr("new thread") : qsTr("orchestrator"); opacity: 0.7 }
             Item { Layout.fillWidth: true }
             Label { text: qsTr("F1 for shortcuts"); opacity: 0.5 }
         }
@@ -104,7 +105,8 @@ ApplicationWindow {
                 id: input
                 wrapMode: TextEdit.Wrap
                 enabled: !backend.busy
-                placeholderText: qsTr("Message the %1 orchestrator. Paste or capture screenshots.").arg(win.projectName)
+                placeholderText: (win.fresh ? qsTr("Start a new %1 thread.") : qsTr("Message the %1 orchestrator."))
+                                 .arg(win.projectName) + " " + qsTr("Paste or capture screenshots.")
 
                 Keys.onPressed: (event) => {
                     if (event.matches(StandardKey.Paste) && backend.pasteImage()) {

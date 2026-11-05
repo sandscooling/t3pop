@@ -47,7 +47,7 @@ public:
     static QVariantList defaultProjects();
     static QString findOrchestrator(const QByteArray &threadListJson);
     static SendPlan planSend(const QString &threadId, const QString &projectPath, const QString &text,
-                             const QStringList &images, bool imageFlag);
+                             const QStringList &images, bool imageFlag, bool fresh = false);
 
     // Path of the t3 wrapper. It is not on PATH, so the app calls it directly.
     static QString t3Path();
@@ -70,7 +70,8 @@ private:
     void setError(const QString &error);
     void fail(const QString &error);
     bool detectImageFlag();
-    void runSend(const QString &threadId, const QString &text);
+    void runSend(const QString &threadId, const QString &text, bool fresh);
+    bool currentIsFresh() const;
 
     QString m_configDir;
     QString m_dropDir;

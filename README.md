@@ -4,8 +4,12 @@ A small popup for sending a message, with screenshots, straight to a
 project's orchestrator thread in T3 Code. You then carry on the conversation
 in T3 Code, which renders the reply.
 
-The target is the project's thread titled exactly `Orchestrator`. If a
-project has none, the first message starts one with that title.
+Each project has a mode:
+
+- `orchestrator` (the default): messages go to the project's thread titled
+  exactly `Orchestrator`. If it has none, the first message starts one.
+- `fresh`: every message starts a new thread, titled from its first line.
+  Hub uses this, since its handoff doc carries knowledge between sessions.
 
 ## Projects
 
@@ -13,8 +17,8 @@ project has none, the first message starts one with that title.
 
 ```json
 [
-  { "name": "Hub", "path": "~/Hub" },
-  { "name": "T3 Code", "path": "~/source/t3code" }
+  { "name": "Hub", "path": "~/Hub", "mode": "fresh" },
+  { "name": "T3 Code", "path": "~/source/t3code", "mode": "orchestrator" }
 ]
 ```
 
