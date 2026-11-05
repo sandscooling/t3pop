@@ -18,6 +18,15 @@ private slots:
         QCOMPARE(Backend::findOrchestrator("not json"), QString());
     }
 
+    void buildsTheThreadDeepLink()
+    {
+        const QByteArray json = R"([{"threadId":"a","link":"https://app.t3.codes/threads/env-1/a"}])";
+        QCOMPARE(Backend::findEnvironment(json), QString("env-1"));
+        QCOMPARE(Backend::findEnvironment("[]"), QString());
+        QCOMPARE(Backend::threadUrl("env-1", "mcp:36"), QString("t3code://threads/env-1/mcp%3A36"));
+        QCOMPARE(Backend::threadUrl({}, "a"), QString());
+    }
+
     void startsAnOrchestratorWhenNoneExists()
     {
         const SendPlan plan = Backend::planSend({}, "/p", "hi", {}, false);

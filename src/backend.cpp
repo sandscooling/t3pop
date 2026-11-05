@@ -12,6 +12,7 @@
 #include <QJsonObject>
 #include <QProcess>
 #include <QSaveFile>
+#include <QUrl>
 
 namespace {
 
@@ -200,6 +201,27 @@ QString Backend::findOrchestrator(const QByteArray &threadListJson)
     return {};
 }
 
+// Every row's link reads https://app.t3.codes/threads/<environmentId>/<threadId>.
+QString Backend::findEnvironment(const QByteArray &threadListJson)
+{
+    for (const QJsonValue &v : QJsonDocument::fromJson(threadListJson).array()) {
+        const QStringList parts = QUrl(v.toObject().value("link").toString()).path().split('/', Qt::SkipEmptyParts);
+        if (parts.size() >= 3 && parts.at(0) == "threads")
+            return parts.at(1);
+    }
+    return {};
+}
+
+// The desktop app's deep link; thread ids can hold ':' (mcp:...), which must be encoded.
+QString Backend::threadUrl(const QString &environmentId, const QString &threadId)
+{
+    if (environmentId.isEmpty() || threadId.isEmpty())
+        return {};
+    return QString("t3code://threads/%1/%2")
+        .arg(QString::fromUtf8(QUrl::toPercentEncoding(environmentId)),
+             QString::fromUtf8(QUrl::toPercentEncoding(threadId)));
+}
+
 SendPlan Backend::planSend(const QString &threadId, const QString &projectPath, const QString &text,
                            const QStringList &images, bool imageFlag, bool fresh)
 {
@@ -292,6 +314,8 @@ void Backend::send(const QString &text)
             const QString err = QString::fromUtf8(list->readAllStandardError()).trimmed();
             return fail(err.isEmpty() ? tr("t3 thread list failed (exit %1).").arg(code) : err);
         }
+        if (m_environmentId.isEmpty())
+            m_environmentId = findEnvironment(out);
         runSend(findOrchestrator(out), text, false);
     });
     list->start(t3Path(), {"thread", "list", "--project", path, "--json"});
@@ -327,9 +351,20 @@ void Backend::runSend(const QString &threadId, const QString &text, bool fresh)
     proc->closeWriteChannel();
 }
 
-// T3 Code is single-instance, so launching it again brings the running
-// window forward instead of opening a second copy.
-void Backend::openT3()
+// Opens T3 Code on the thread the message went to, which also shows it under a
+// collapsed project in the sidebar. Without a thread id, launching the app
+// again just brings the running single-instance window forward.
+void Backend::openT3(const QString &threadId)
 {
-    QProcess::startDetached("gtk-launch", {"com.t3tools.T3Code"});
+    if (!threadId.isEmpty() && m_environmentId.isEmpty()) {
+        // Fresh-mode sends skip the thread list, so read the id from it now.
+        const QString path = m_projects.value(m_projectIndex).toMap().value("path").toString();
+        QProcess list;
+        list.start(t3Path(), {"thread", "list", "--project", path, "--json"});
+        if (list.waitForFinished(5000))
+            m_environmentId = findEnvironment(list.readAllStandardOutput());
+    }
+    const QString url = threadUrl(m_environmentId, threadId);
+    if (url.isEmpty() || !QProcess::startDetached("xdg-open", {url}))
+        QProcess::startDetached("gtk-launch", {"com.t3tools.T3Code"});
 }

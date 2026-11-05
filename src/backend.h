@@ -41,11 +41,13 @@ public:
     Q_INVOKABLE void removeImage(int index);
     Q_INVOKABLE void capture();
     Q_INVOKABLE void send(const QString &text);
-    Q_INVOKABLE void openT3();
+    Q_INVOKABLE void openT3(const QString &threadId = {});
 
     // Pure helpers, public so the tests can reach them.
     static QVariantList defaultProjects();
     static QString findOrchestrator(const QByteArray &threadListJson);
+    static QString findEnvironment(const QByteArray &threadListJson);
+    static QString threadUrl(const QString &environmentId, const QString &threadId);
     static SendPlan planSend(const QString &threadId, const QString &projectPath, const QString &text,
                              const QStringList &images, bool imageFlag, bool fresh = false);
 
@@ -77,6 +79,7 @@ private:
     QString m_dropDir;
     QVariantList m_projects;
     int m_projectIndex = 0;
+    QString m_environmentId;
     QStringList m_images;
     bool m_busy = false;
     QString m_error;

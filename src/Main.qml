@@ -55,7 +55,8 @@ ApplicationWindow {
         function onCaptureFinished() { win.summon() }
         function onSent(threadId) {
             input.clear()
-            backend.openT3()
+            win.hide()
+            backend.openT3(threadId)
             Qt.quit()
         }
     }
